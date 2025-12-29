@@ -32,7 +32,7 @@ Using this command for run
 
 How to use git hup?
 
-- git init 
+- git init ( using for initialize a new Git repository in your project folder.)
 - git add .
 - git commit -m "Init"
 - git push
