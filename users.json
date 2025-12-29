@@ -1,0 +1,18 @@
+[
+  {
+    "id": "1735459200000",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "123456",
+    "phone": "+1234567890",
+    "address": "123 Main St, City"
+  },
+  {
+    "id": "1735459300000",
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "password": "password",
+    "phone": "+9876543210",
+    "address": "456 Oak Ave, Town"
+  }
+]

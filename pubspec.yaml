@@ -1,0 +1,33 @@
+name: food_delivery_app
+description: A beautiful food delivery Flutter application
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # Add your local images here
+  assets:
+    - assets/images/
+    - assets/images/breakfast/
+    - assets/images/burgers/
+    - assets/images/sushi/
+    - assets/images/pizza/
+    - assets/images/salads/
+    - assets/images/cakes/
+    - assets/images/ice_cream/
+    - assets/images/restaurants/
