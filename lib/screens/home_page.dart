@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:food_delivery_app/models/user.dart';
 import '../models/food_item.dart';
 import '../models/cart_item.dart';
+import '../models/order.dart';
 import '../data/food_data.dart';
 import '../widgets/home_tab.dart';
 import '../widgets/cart_tab.dart';
@@ -27,6 +28,7 @@ class _HomePageState extends State<HomePage> {
   String _sortOption = 'none';
   final TextEditingController _searchController = TextEditingController();
   final List<CartItem> _cartItems = [];
+  final List<Order> _orderHistory = [];
 
   // User profile data
   String _userName = 'John Doe';
@@ -125,6 +127,12 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _addOrderToHistory(Order order) {
+    setState(() {
+      _orderHistory.insert(0, order);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,15 +158,18 @@ class _HomePageState extends State<HomePage> {
               cartItems: _cartItems,
               onClearCart: _clearCart,
               onQuantityChanged: () => setState(() {}),
+              currentUser: widget.currentUser,
+              onOrderPlaced: _addOrderToHistory,
             ),
             AccountTab(
               userName: _userName,
               userEmail: _userEmail,
               userPhone: _userPhone,
               userAddress: _userAddress,
-              currentUser: widget.currentUser, // ✅ correct
+              currentUser: widget.currentUser,
               onUpdateProfile: _updateProfile,
               onLogout: () {},
+              orderHistory: _orderHistory,
             ),
           ],
         ),
