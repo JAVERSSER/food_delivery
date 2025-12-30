@@ -1,29 +1,46 @@
-📦 Order Status FlowThe order progresses through 5 stages:
-1. ⏳ Pending Payment (0 seconds) - Initial status when order is created
-2. ✅ Order Confirmed (0 seconds) - Right after payment
-3. 👨‍🍳 Preparing Your Food (10 seconds after confirmed)
-4. 🚗 On The Way (20 seconds after confirmed)
-5. 📦 Delivered (30 seconds after confirmed)
+### 📦 Order Status Flow (Simulation Mode)
 
-⏰ Timing Configuration
+This is a **demo/simulation** of real-time order tracking. The order automatically progresses through the following stages:
 
-Currently in "order_tracking_page.dart", the status updates every 10 seconds.
-Here's the code:
+| Step | Status                | Emoji       | Time After Confirmed |
+|------|-----------------------|-------------|----------------------|
+| 1    | Order Confirmed       | ✅         | Immediate (0s)       |
+| 2    | Preparing Your Food   | 👨‍🍳         | ~10 seconds          |
+| 3    | On The Way            | 🚗         | ~20 seconds          |
+| 4    | Delivered             | 📦         | ~30 seconds          |
 
-```
+> **Note**: 
+> - "Pending Payment" is not displayed in this tracking screen (it would appear earlier in the checkout flow).
+> - This is a **simulated progression** for demo purposes only.
 
-dartvoid _startStatusSimulation() {
-  // Updates every 10 seconds
+### ⏰ Timing Configuration
+
+The status updates every **10 seconds** using a `Timer.periodic`. When the order reaches "Delivered", the timer stops.
+
+File: `lib/screens/order_tracking_page.dart`
+
+```dart
+void _startStatusSimulation() {
   _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
     if (_currentStep < 4) {
       setState(() {
         _currentStep++;
-        // Status changes here
+        switch (_currentStep) {
+          case 2:
+            widget.order.status = OrderStatus.preparing;
+            break;
+          case 3:
+            widget.order.status = OrderStatus.onTheWay;
+            break;
+          case 4:
+            widget.order.status = OrderStatus.delivered;
+            timer.cancel(); // Stop updates after delivery
+            break;
+        }
       });
     }
   });
 }
-
 ```
 
 How to run project in flutter?
