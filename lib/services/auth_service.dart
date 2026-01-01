@@ -1,84 +1,51 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import '../models/user.dart';
+import 'storage_service.dart';
 
 class AuthService {
-  static const String _fileName = 'users.json';
+  final StorageService _storageService = StorageService();
 
-  Future<String> get _localPath async {
-    final directory = await getApplicationDocumentsDirectory();
-    return directory.path;
-  }
-
-  Future<File> get _localFile async {
-    final path = await _localPath;
-    return File('$path/$_fileName');
-  }
-
-  Future<List<User>> _readUsers() async {
-    try {
-      final file = await _localFile;
-      if (!await file.exists()) {
-        return [];
-      }
-      final contents = await file.readAsString();
-      final List<dynamic> jsonData = json.decode(contents);
-      return jsonData.map((json) => User.fromJson(json)).toList();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  Future<void> _writeUsers(List<User> users) async {
-    final file = await _localFile;
-    final jsonData = users.map((user) => user.toJson()).toList();
-    await file.writeAsString(json.encode(jsonData));
-  }
-
+  // Register a new user
   Future<bool> register(User user) async {
-    try {
-      final users = await _readUsers();
-      
-      // Check if email already exists
-      if (users.any((u) => u.email == user.email)) {
-        return false;
-      }
-
-      users.add(user);
-      await _writeUsers(users);
-      return true;
-    } catch (e) {
-      return false;
-    }
+    return await _storageService.saveUser(user);
   }
 
+  // Login user
   Future<User?> login(String email, String password) async {
-    try {
-      final users = await _readUsers();
-      final user = users.firstWhere(
-        (u) => u.email == email && u.password == password,
-        orElse: () => throw Exception('User not found'),
-      );
-      return user;
-    } catch (e) {
-      return null;
+    final user = await _storageService.findUser(email, password);
+    
+    if (user != null) {
+      // Save as current user
+      await _storageService.saveCurrentUser(user);
     }
+    
+    return user;
   }
 
-  Future<User?> updateUser(User updatedUser) async {
-    try {
-      final users = await _readUsers();
-      final index = users.indexWhere((u) => u.id == updatedUser.id);
-      
-      if (index != -1) {
-        users[index] = updatedUser;
-        await _writeUsers(users);
-        return updatedUser;
-      }
-      return null;
-    } catch (e) {
-      return null;
+  // Get current logged-in user
+  Future<User?> getCurrentUser() async {
+    return await _storageService.getCurrentUser();
+  }
+
+  // Update user profile
+  Future<bool> updateUserProfile(User updatedUser) async {
+    final success = await _storageService.updateUser(updatedUser);
+    
+    if (success) {
+      // Update current user in storage
+      await _storageService.saveCurrentUser(updatedUser);
     }
+    
+    return success;
+  }
+
+  // Logout user
+  Future<void> logout() async {
+    await _storageService.clearCurrentUser();
+  }
+
+  // Check if user is logged in
+  Future<bool> isLoggedIn() async {
+    final user = await getCurrentUser();
+    return user != null;
   }
 }

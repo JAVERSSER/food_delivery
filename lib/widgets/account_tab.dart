@@ -1,32 +1,92 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/order.dart';
+import '../services/auth_service.dart';
 import '../screens/login_page.dart';
 import '../screens/order_tracking_page.dart';
 
-class AccountTab extends StatelessWidget {
-  final User currentUser;
-  final Function(String, String, String, String) onUpdateProfile;
-  final VoidCallback onLogout;
+class AccountTab extends StatefulWidget {
   final List<Order> orderHistory;
 
   const AccountTab({
     Key? key,
-    required this.currentUser,
-    required this.onUpdateProfile,
-    required this.onLogout,
-    required this.orderHistory,
-    required String userName,
-    required String userEmail,
-    required String userPhone,
-    required String userAddress,
+    required this.orderHistory, required String userName, required String userEmail, required String userAddress, required String userPhone, required User currentUser, required void Function(String name, String email, String phone, String address) onUpdateProfile, required Null Function() onLogout,
   }) : super(key: key);
 
+  @override
+  State<AccountTab> createState() => _AccountTabState();
+}
+
+class _AccountTabState extends State<AccountTab> {
+  final AuthService _authService = AuthService();
+  User? _currentUser;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = await _authService.getCurrentUser();
+    setState(() {
+      _currentUser = user;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _updateProfile(String name, String email, String phone, String address) async {
+    if (_currentUser == null) return;
+
+    final updatedUser = _currentUser!.copyWith(
+      name: name,
+      email: email,
+      phone: phone,
+      address: address,
+    );
+
+    final success = await _authService.updateUserProfile(updatedUser);
+
+    if (success && mounted) {
+      setState(() {
+        _currentUser = updatedUser;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update profile'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _logout() async {
+    await _authService.logout();
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+
   void _showEditProfileDialog(BuildContext context) {
-    final nameController = TextEditingController(text: currentUser.name);
-    final emailController = TextEditingController(text: currentUser.email);
-    final phoneController = TextEditingController(text: currentUser.phone);
-    final addressController = TextEditingController(text: currentUser.address);
+    if (_currentUser == null) return;
+
+    final nameController = TextEditingController(text: _currentUser!.name);
+    final emailController = TextEditingController(text: _currentUser!.email);
+    final phoneController = TextEditingController(text: _currentUser!.phone);
+    final addressController = TextEditingController(text: _currentUser!.address);
 
     showDialog(
       context: context,
@@ -96,7 +156,7 @@ class AccountTab extends StatelessWidget {
                   return;
                 }
 
-                onUpdateProfile(
+                _updateProfile(
                   nameController.text,
                   emailController.text,
                   phoneController.text,
@@ -173,7 +233,7 @@ class AccountTab extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: orderHistory.isEmpty
+                    child: widget.orderHistory.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -205,9 +265,9 @@ class AccountTab extends StatelessWidget {
                         : ListView.builder(
                             controller: scrollController,
                             padding: const EdgeInsets.all(16),
-                            itemCount: orderHistory.length,
+                            itemCount: widget.orderHistory.length,
                             itemBuilder: (context, index) {
-                              final order = orderHistory[index];
+                              final order = widget.orderHistory[index];
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 elevation: 2,
@@ -437,6 +497,16 @@ class AccountTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_currentUser == null) {
+      return const Center(
+        child: Text('User not found. Please login again.'),
+      );
+    }
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -460,7 +530,7 @@ class AccountTab extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                currentUser.name,
+                _currentUser!.name,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 24,
@@ -470,7 +540,7 @@ class AccountTab extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                currentUser.email,
+                _currentUser!.email,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -491,10 +561,10 @@ class AccountTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _buildProfileInfo('Full Name', currentUser.name, Icons.person),
-        _buildProfileInfo('Email Address', currentUser.email, Icons.email),
-        _buildProfileInfo('Phone Number', currentUser.phone, Icons.phone),
-        _buildProfileInfo('Address', currentUser.address, Icons.location_on),
+        _buildProfileInfo('Full Name', _currentUser!.name, Icons.person),
+        _buildProfileInfo('Email Address', _currentUser!.email, Icons.email),
+        _buildProfileInfo('Phone Number', _currentUser!.phone, Icons.phone),
+        _buildProfileInfo('Address', _currentUser!.address, Icons.location_on),
 
         const SizedBox(height: 24),
 
@@ -531,7 +601,7 @@ class AccountTab extends StatelessWidget {
           Icons.receipt_outlined,
           'Order History',
           () => _showOrderHistory(context),
-          trailing: orderHistory.isNotEmpty
+          trailing: widget.orderHistory.isNotEmpty
               ? Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -539,7 +609,7 @@ class AccountTab extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${orderHistory.length}',
+                    '${widget.orderHistory.length}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -600,21 +670,13 @@ class AccountTab extends StatelessWidget {
                     content: const Text('Are you sure you want to logout?'),
                     actions: [
                       TextButton(
-                        onPressed: () {
-                          Navigator.pop(dialogContext);
-                        },
+                        onPressed: () => Navigator.pop(dialogContext),
                         child: const Text('Cancel'),
                       ),
                       TextButton(
                         onPressed: () {
                           Navigator.pop(dialogContext);
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
-                            ),
-                            (route) => false,
-                          );
+                          _logout();
                         },
                         child: const Text(
                           'Logout',
